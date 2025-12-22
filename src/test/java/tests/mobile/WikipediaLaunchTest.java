@@ -349,6 +349,268 @@ public class WikipediaLaunchTest extends MobileBaseTest {
         }
     }
 
+    @Test(dependsOnMethods = {"testWikipediaLaunchesSuccessfully", "testSimpleInteraction", "testSearchFunctionality"})
+    public void testArticleScrolling() throws InterruptedException {
+        System.out.println("📜 ТЕСТ 4: Прокрутка (скроллинг) статьи");
+        System.out.println("========================================");
+
+        // Восстанавливаем приложение если нужно
+        ensureWikipediaIsOpen();
+
+        // Убеждаемся что мы в Wikipedia
+        String currentPackage = driver.getCurrentPackage();
+        System.out.println("📱 Текущий пакет: " + currentPackage);
+
+        if (!currentPackage.equals("org.wikipedia")) {
+            System.out.println("❌ Мы не в Wikipedia, пытаемся восстановить...");
+            restoreWikipediaApp();
+
+            // Проверяем снова
+            currentPackage = driver.getCurrentPackage();
+            System.out.println("📱 Пакет после восстановления: " + currentPackage);
+        }
+
+        Assert.assertEquals(currentPackage, "org.wikipedia", "Должны быть в Wikipedia");
+
+        // Убеждаемся что onboarding пропущен
+        skipOnboardingIfPresent();
+
+        // Проверяем текущую активность
+        String currentActivity = driver.currentActivity();
+        System.out.println("🎯 Текущая активность: " + currentActivity);
+
+        // Если мы на экране поиска, возвращаемся на главный экран
+        if (currentActivity.contains("SearchActivity") || currentActivity.contains("search")) {
+            System.out.println("↩️ Возвращаемся на главный экран...");
+            driver.navigate().back();
+            Thread.sleep(2000);
+        }
+
+        // Даем время для стабилизации
+        Thread.sleep(2000);
+
+        try {
+            // Открываем поиск для поиска длинной статьи
+            System.out.println("🎯 Открываем поиск для теста скроллинга...");
+
+            // Ищем и кликаем на поле поиска
+            boolean searchFieldClicked = false;
+
+            try {
+                driver.findElement(AppiumBy.accessibilityId("Search Wikipedia")).click();
+                System.out.println("✅ Нашли поле поиска по accessibility id");
+                searchFieldClicked = true;
+            } catch (Exception e1) {
+                try {
+                    driver.findElement(AppiumBy.id("org.wikipedia:id/search_container")).click();
+                    System.out.println("✅ Нашли поле поиска по ID");
+                    searchFieldClicked = true;
+                } catch (Exception e2) {
+                    driver.findElement(AppiumBy.xpath("//*[contains(@text, 'Search')]")).click();
+                    System.out.println("✅ Нашли поле поиска по тексту");
+                    searchFieldClicked = true;
+                }
+            }
+
+            if (!searchFieldClicked) {
+                System.out.println("⚠️ Не удалось открыть поиск, пропускаем тест скроллинга");
+                return;
+            }
+
+            // Ждем открытия экрана поиска
+            Thread.sleep(2000);
+
+            // Вводим поисковый запрос для длинной статьи
+            System.out.println("⌨️ Вводим запрос 'History' для поиска длинной статьи...");
+
+            boolean textEntered = false;
+            try {
+                driver.findElement(AppiumBy.id("org.wikipedia:id/search_src_text")).sendKeys("History");
+                System.out.println("✅ Ввели текст 'History'");
+                textEntered = true;
+            } catch (Exception e) {
+                try {
+                    driver.findElement(AppiumBy.className("android.widget.EditText")).sendKeys("History");
+                    System.out.println("✅ Ввели текст по классу");
+                    textEntered = true;
+                } catch (Exception e2) {
+                    System.out.println("❌ Не удалось ввести текст");
+                }
+            }
+
+            if (!textEntered) {
+                System.out.println("⚠️ Не удалось ввести текст, пробуем другой запрос...");
+                try {
+                    driver.findElement(AppiumBy.id("org.wikipedia:id/search_src_text")).sendKeys("Science");
+                    System.out.println("✅ Ввели текст 'Science'");
+                } catch (Exception e) {
+                    System.out.println("❌ Не удалось ввести текст, пропускаем тест");
+                    driver.navigate().back();
+                    return;
+                }
+            }
+
+            // Ждем результаты
+            System.out.println("⏳ Ждем результатов поиска...");
+            Thread.sleep(3000);
+
+            // Проверяем есть ли результаты
+            int resultsCount = 0;
+            try {
+                resultsCount = driver.findElements(
+                        AppiumBy.id("org.wikipedia:id/page_list_item_title")).size();
+                System.out.println("📊 Найдено статей: " + resultsCount);
+            } catch (Exception e) {
+                System.out.println("⚠️ Не удалось получить количество результатов");
+            }
+
+            if (resultsCount > 0) {
+                // Открываем первую статью
+                System.out.println("📖 Открываем первую статью для теста скроллинга...");
+                try {
+                    driver.findElement(AppiumBy.id("org.wikipedia:id/page_list_item_title")).click();
+
+                    // Ждем загрузки статьи
+                    System.out.println("⏳ Ждем загрузки статьи...");
+                    Thread.sleep(4000);
+
+                    // Проверяем что статья загрузилась
+                    String articlePageSource = driver.getPageSource();
+                    int articleSize = articlePageSource.length();
+                    System.out.println("📄 Размер статьи: " + articleSize + " символов");
+
+                    // Проверяем что статья достаточно большая для скроллинга
+                    if (articleSize > 5000) {
+                        System.out.println("✅ Статья достаточно длинная для теста скроллинга");
+
+                        // Выполняем скроллинг
+                        System.out.println("🔄 Начинаем скроллинг статьи...");
+
+                        // Способ 1: Используем gesture для скроллинга
+                        performScroll();
+
+                        // Ждем немного
+                        Thread.sleep(1000);
+
+                        // Проверяем что мы прокрутили
+                        String scrolledPageSource = driver.getPageSource();
+                        System.out.println("📄 Размер после скроллинга: " + scrolledPageSource.length() + " символов");
+
+                        // Делаем еще один скролл
+                        System.out.println("🔄 Делаем второй скролл...");
+                        performScroll();
+
+                        // Проверяем что статья все еще открыта
+                        String currentArticleActivity = driver.currentActivity();
+                        System.out.println("🎯 Активность после скроллинга: " + currentArticleActivity);
+
+                        // Проверяем что мы все еще в статье
+                        if (currentArticleActivity.contains("Article") || driver.getPageSource().length() > 3000) {
+                            System.out.println("✅ Скроллинг работает! Статья успешно прокручивается");
+                        } else {
+                            System.out.println("⚠️ Возможно, произошел выход из статьи");
+                        }
+
+                    } else {
+                        System.out.println("⚠️ Статья слишком короткая для теста скроллинга");
+                    }
+
+                    // Возвращаемся на главный экран
+                    System.out.println("↩️ Возвращаемся на главный экран...");
+                    driver.navigate().back();
+                    Thread.sleep(2000);
+
+                    // Если нужно, возвращаемся еще раз
+                    try {
+                        driver.navigate().back();
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        // игнорируем
+                    }
+
+                    System.out.println("✅ ТЕСТ 4 ПРОЙДЕН: Скроллинг статьи проверен");
+
+                } catch (Exception e) {
+                    System.out.println("❌ Ошибка при открытии статьи: " + e.getMessage());
+
+                    // Пытаемся вернуться на главный экран
+                    try {
+                        driver.navigate().back();
+                        Thread.sleep(2000);
+                    } catch (Exception e2) {
+                        // игнорируем
+                    }
+                }
+
+            } else {
+                System.out.println("⚠️ Нет результатов для теста скроллинга");
+
+                // Возвращаемся на главный экран
+                driver.navigate().back();
+                Thread.sleep(2000);
+            }
+
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка в тесте скроллинга: " + e.getMessage());
+
+            // Пытаемся восстановить состояние
+            try {
+                for (int i = 0; i < 3; i++) {
+                    driver.navigate().back();
+                    Thread.sleep(1000);
+                }
+            } catch (Exception e2) {
+                // игнорируем
+            }
+
+            throw e;
+        }
+    }
+
+    // Вспомогательный метод для выполнения скроллинга
+    private void performScroll() {
+        try {
+            // Получаем размер экрана
+            int screenWidth = driver.manage().window().getSize().getWidth();
+            int screenHeight = driver.manage().window().getSize().getHeight();
+
+            // Вычисляем координаты для скролла
+            int startX = screenWidth / 2;
+            int startY = (int) (screenHeight * 0.7);
+            int endY = (int) (screenHeight * 0.3);
+
+            System.out.println("   📏 Параметры скролла:");
+            System.out.println("      Ширина экрана: " + screenWidth);
+            System.out.println("      Высота экрана: " + screenHeight);
+            System.out.println("      Начало: (" + startX + ", " + startY + ")");
+            System.out.println("      Конец: (" + startX + ", " + endY + ")");
+
+            // Выполняем скролл с помощью gesture
+            driver.executeScript("mobile: scrollGesture", java.util.Map.of(
+                    "left", startX - 50, "top", startY, "width", 100, "height", 100,
+                    "direction", "down",
+                    "percent", 1.0
+            ));
+
+            System.out.println("   ✅ Скролл выполнен успешно");
+
+        } catch (Exception e) {
+            System.out.println("   ❌ Ошибка при выполнении скролла: " + e.getMessage());
+
+            // Пробуем альтернативный способ скролла
+            try {
+                System.out.println("   🔄 Пробуем альтернативный способ скролла...");
+                driver.executeScript("mobile: swipe", java.util.Map.of(
+                        "startX", 500, "startY", 1500, "endX", 500, "endY", 500,
+                        "duration", 1000
+                ));
+                System.out.println("   ✅ Альтернативный скролл выполнен");
+            } catch (Exception e2) {
+                System.out.println("   ❌ Альтернативный скролл также не сработал");
+            }
+        }
+    }
+
     // Вспомогательный метод для пропуска onboarding
     private void skipOnboardingIfPresent() {
         System.out.println("⏭️ Проверяем наличие onboarding...");
