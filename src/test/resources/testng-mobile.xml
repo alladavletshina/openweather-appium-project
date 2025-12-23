@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Mobile Tests Suite">
     <test name="Wikipedia Mobile Tests">
         <classes>
-            <class name="tests.mobile.WikipediaMobileTests"/>
+            <class name="tests.mobile.WikipediaMobileTest"/>
         </classes>
     </test>
 </suite>

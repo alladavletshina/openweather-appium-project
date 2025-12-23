@@ -4,6 +4,8 @@ package utils;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class ConfigReader {
@@ -111,5 +113,41 @@ public class ConfigReader {
     // Получить все свойства (для отладки)
     public Properties getAllProperties() {
         return new Properties(properties);
+    }
+
+    // Новые методы для веб-тестов
+    public int getPageLoadTimeout() {
+        try {
+            return Integer.parseInt(properties.getProperty("web.page.load.timeout", "30"));
+        } catch (NumberFormatException e) {
+            return 30;
+        }
+    }
+
+    public int getScriptTimeout() {
+        try {
+            return Integer.parseInt(properties.getProperty("web.script.timeout", "30"));
+        } catch (NumberFormatException e) {
+            return 30;
+        }
+    }
+
+    public boolean isHeadless() {
+        return Boolean.parseBoolean(properties.getProperty("web.headless", "false"));
+    }
+
+    public String getChromeOptions() {
+        return properties.getProperty("web.chrome.options", "");
+    }
+
+    // Метод для получения всех веб-настроек
+    public Map<String, Object> getWebSettings() {
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("baseUrl", getWebBaseUrl());
+        settings.put("browser", getWebBrowser());
+        settings.put("timeout", getWebTimeout());
+        settings.put("pageLoadTimeout", getPageLoadTimeout());
+        settings.put("headless", isHeadless());
+        return settings;
     }
 }

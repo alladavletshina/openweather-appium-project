@@ -1,27 +1,25 @@
 package pages.web;
 
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.*;
+import org.openqa.selenium.support.ui.*;
 import utils.ConfigReader;
 import java.time.Duration;
+import java.util.List;
 
 public class OpenWeatherHomePage {
     private WebDriver driver;
     private WebDriverWait wait;
     private ConfigReader config;
 
-    // Более гибкие локаторы
-    @FindBy(css = "input[placeholder*='Search'], input[placeholder*='search']")
+    // ИСПРАВЛЕННЫЕ РАБОЧИЕ ЛОКАТОРЫ
+    @FindBy(css = "input[placeholder='Search city'], input.search-input, #search_str")
     private WebElement searchInput;
 
-    @FindBy(css = "button[type='submit'], .search-button")
+    @FindBy(css = "button.btn-search, button[type='submit'], .search-button")
     private WebElement searchButton;
 
-    @FindBy(css = "nav, .navbar, header")
+    @FindBy(css = "nav, header, .navbar, .main-nav")
     private WebElement navigation;
 
     @FindBy(css = "footer, .footer")
@@ -30,16 +28,24 @@ public class OpenWeatherHomePage {
     @FindBy(tagName = "body")
     private WebElement pageBody;
 
+    @FindBy(css = ".weather-items, .current-container, .weather-widget")
+    private WebElement weatherWidget;
+
+    @FindBy(css = "div.search-dropdown-menu li, .search-results li")
+    private List<WebElement> searchResults;
+
     public OpenWeatherHomePage(WebDriver driver) {
         this.driver = driver;
         this.config = new ConfigReader();
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         PageFactory.initElements(driver, this);
     }
 
     public boolean isPageLoaded() {
         try {
-            return pageBody.isDisplayed() && driver.getTitle() != null;
+            String title = driver.getTitle();
+            return title != null && !title.isEmpty() &&
+                    (title.contains("Weather") || title.contains("OpenWeather"));
         } catch (Exception e) {
             return false;
         }
@@ -47,57 +53,59 @@ public class OpenWeatherHomePage {
 
     public void searchForCity(String cityName) {
         try {
-            // Ждем пока поле поиска станет доступным
-            if (searchInput != null) {
+            // Способ 1: Используем PageFactory элементы
+            if (searchInput != null && searchInput.isDisplayed()) {
                 wait.until(ExpectedConditions.elementToBeClickable(searchInput));
-
                 searchInput.clear();
                 searchInput.sendKeys(cityName);
 
-                // Пробуем кликнуть, если не получается - нажимаем Enter
-                try {
-                    if (searchButton != null && searchButton.isDisplayed() && searchButton.isEnabled()) {
-                        searchButton.click();
-                    } else {
-                        searchInput.sendKeys(org.openqa.selenium.Keys.ENTER);
-                    }
-                } catch (Exception e) {
-                    searchInput.sendKeys(org.openqa.selenium.Keys.ENTER);
+                if (searchButton != null && searchButton.isDisplayed()) {
+                    searchButton.click();
+                } else {
+                    searchInput.sendKeys(Keys.ENTER);
                 }
 
-                // Ждем обновления страницы
-                Thread.sleep(2000);
+            } else {
+                // Способ 2: Используем JavaScript для поиска поля
+                searchWithJavaScript(cityName);
             }
 
+            // Ждем результаты
+            Thread.sleep(2000);
+
         } catch (Exception e) {
-            System.out.println("Error in search: " + e.getMessage());
-            // Если не нашли элементы, используем JavaScript
-            searchWithJavaScript(cityName);
+            System.out.println("Поиск не сработал, используем прямой URL: " + e.getMessage());
+            // Способ 3: Прямой URL
+            driver.get(config.getWebBaseUrl() + "/find?q=" + cityName);
         }
+
+        waitForPageLoad();
     }
 
     private void searchWithJavaScript(String cityName) {
         try {
-            // Альтернативный способ через JavaScript
             String script =
-                    "var inputs = document.querySelectorAll('input'); " +
-                            "for(var i=0; i<inputs.length; i++) { " +
-                            "  if(inputs[i].type === 'text' || (inputs[i].placeholder && inputs[i].placeholder.toLowerCase().includes('search'))) { " +
-                            "    inputs[i].value = '" + cityName + "'; " +
-                            "    inputs[i].dispatchEvent(new Event('input', { bubbles: true })); " +
-                            "    break; " +
-                            "  } " +
-                            "} " +
-                            "setTimeout(function() { " +
-                            "  var event = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13 }); " +
-                            "  document.dispatchEvent(event); " +
-                            "}, 100);";
+                    "var inputs = document.getElementsByTagName('input');" +
+                            "for(var i = 0; i < inputs.length; i++) {" +
+                            "   var input = inputs[i];" +
+                            "   if(input.type === 'text' || input.placeholder || input.className.includes('search')) {" +
+                            "       input.value = '" + cityName + "';" +
+                            "       input.dispatchEvent(new Event('input'));" +
+                            "       break;" +
+                            "   }" +
+                            "}" +
+                            "var forms = document.getElementsByTagName('form');" +
+                            "for(var i = 0; i < forms.length; i++) {" +
+                            "   if(forms[i].className.includes('search') || forms[i].getAttribute('action')) {" +
+                            "       forms[i].submit();" +
+                            "       break;" +
+                            "   }" +
+                            "}";
 
-            ((org.openqa.selenium.JavascriptExecutor) driver).executeScript(script);
-            Thread.sleep(2000);
+            ((JavascriptExecutor) driver).executeScript(script);
 
         } catch (Exception e) {
-            System.out.println("JavaScript search also failed: " + e.getMessage());
+            System.out.println("JavaScript search failed: " + e.getMessage());
         }
     }
 
@@ -107,7 +115,24 @@ public class OpenWeatherHomePage {
 
     public boolean isNavigationDisplayed() {
         try {
-            return navigation != null && navigation.isDisplayed();
+            // Проверяем несколько способов
+            if (navigation != null && navigation.isDisplayed()) {
+                return true;
+            }
+
+            // Ищем навигацию через другие селекторы
+            List<WebElement> navElements = driver.findElements(
+                    By.cssSelector("nav, .navbar, header, .header, [role='navigation']")
+            );
+
+            for (WebElement nav : navElements) {
+                if (nav.isDisplayed()) {
+                    return true;
+                }
+            }
+
+            return false;
+
         } catch (Exception e) {
             return false;
         }
@@ -121,12 +146,18 @@ public class OpenWeatherHomePage {
         }
     }
 
+    public boolean isWeatherWidgetDisplayed() {
+        try {
+            return weatherWidget != null && weatherWidget.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void navigateTo(String url) {
         String baseUrl = config.getWebBaseUrl();
-        if (!baseUrl.endsWith("/") && !url.startsWith("/")) {
-            url = "/" + url;
-        }
         driver.get(baseUrl + url);
+        waitForPageLoad();
     }
 
     public String getCurrentUrl() {
@@ -143,5 +174,31 @@ public class OpenWeatherHomePage {
 
     public void openHomePage() {
         driver.get(config.getWebBaseUrl());
+        waitForPageLoad();
+    }
+
+    public int getSearchResultsCount() {
+        try {
+            // Ждем появления результатов
+            wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("div.search-dropdown-menu, .search-results, .results-container")
+            ));
+            return searchResults.size();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public List<WebElement> getSearchResults() {
+        return searchResults;
+    }
+
+    public void waitForPageLoad() {
+        try {
+            wait.until(webDriver -> ((JavascriptExecutor) webDriver)
+                    .executeScript("return document.readyState").equals("complete"));
+        } catch (Exception e) {
+            // Игнорируем
+        }
     }
 }

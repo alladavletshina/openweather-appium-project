@@ -1,12 +1,9 @@
-// src/test/java/utils/WaitUtils.java
 package utils;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.*;
 import java.time.Duration;
+import java.util.function.Function;
 
 public class WaitUtils {
 
@@ -20,19 +17,14 @@ public class WaitUtils {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 
-    public static boolean waitForElementToBeInvisible(WebDriver driver, By locator, int timeout) {
+    public static void waitForElementToDisappear(WebDriver driver, By locator, int timeout) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-        return wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
     }
 
-    public static WebElement waitForElementPresent(WebDriver driver, By locator, int timeout) {
+    public static void waitForTextToBePresent(WebDriver driver, By locator, String text, int timeout) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-        return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
-    }
-
-    public static void waitForPageTitle(WebDriver driver, String title, int timeout) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-        wait.until(ExpectedConditions.titleContains(title));
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(locator, text));
     }
 
     public static void waitForUrlContains(WebDriver driver, String text, int timeout) {
@@ -40,12 +32,31 @@ public class WaitUtils {
         wait.until(ExpectedConditions.urlContains(text));
     }
 
-    public static void waitForPageLoad(WebDriver driver, int timeout) {
+    public static void waitForPageTitleContains(WebDriver driver, String text, int timeout) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-        wait.until(webDriver -> {
-            String readyState = (String) ((org.openqa.selenium.JavascriptExecutor) webDriver)
-                    .executeScript("return document.readyState");
-            return "complete".equals(readyState);
+        wait.until(ExpectedConditions.titleContains(text));
+    }
+
+    public static void waitForAjaxComplete(WebDriver driver, int timeout) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
+        wait.until((Function<WebDriver, Boolean>) d -> {
+            JavascriptExecutor js = (JavascriptExecutor) d;
+            return (Boolean) js.executeScript(
+                    "return typeof jQuery !== 'undefined' ? jQuery.active === 0 : true"
+            );
         });
+    }
+
+    public static void waitForPageLoadComplete(WebDriver driver, int timeout) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
+        wait.until((Function<WebDriver, Boolean>) d -> {
+            JavascriptExecutor js = (JavascriptExecutor) d;
+            return js.executeScript("return document.readyState").equals("complete");
+        });
+    }
+
+    public static WebElement waitForPresenceOfElement(WebDriver driver, By locator, int timeout) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
+        return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 }

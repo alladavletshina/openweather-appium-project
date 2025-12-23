@@ -1,11 +1,9 @@
-// src/test/java/base/WebBaseTest.java
 package base;
 
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.*;
 import org.testng.annotations.*;
-import utils.ConfigReader;
-import utils.DriverManager;
+import utils.*;
 import java.time.Duration;
 
 public class WebBaseTest {
@@ -24,6 +22,7 @@ public class WebBaseTest {
         // Устанавливаем таймауты
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(config.getWebTimeout()));
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
+        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
 
         // Создаем явные ожидания
         wait = new WebDriverWait(driver, Duration.ofSeconds(config.getWebTimeout()));
@@ -34,19 +33,12 @@ public class WebBaseTest {
         System.out.println("✅ Драйвер инициализирован");
         System.out.println("🌐 Браузер: " + config.getWebBrowser());
         System.out.println("🔗 Базовый URL: " + config.getWebBaseUrl());
-
-        // ОТКРЫВАЕМ ГЛАВНУЮ СТРАНИЦУ ЗДЕСЬ!
-        System.out.println("🌐 Открываем главную страницу...");
-        driver.get(config.getWebBaseUrl());
-        waitForPageLoad();
-        System.out.println("✅ Главная страница открыта");
     }
 
     @AfterClass
     public void tearDown() {
         if (driver != null) {
             try {
-                // Закрываем драйвер аккуратно
                 Thread.sleep(1000);
                 DriverManager.closeDriver();
                 System.out.println("✅ Драйвер закрыт");
@@ -58,42 +50,58 @@ public class WebBaseTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        System.out.println("\n--- Начало нового теста ---");
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("НАЧАЛО НОВОГО ТЕСТА");
+        System.out.println("=".repeat(50));
     }
 
     @AfterMethod
     public void afterMethod() {
-        System.out.println("--- Конец теста ---\n");
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("ТЕСТ ЗАВЕРШЕН");
+        System.out.println("=".repeat(50) + "\n");
     }
 
-    // Вспомогательный метод для ожидания загрузки страницы
+    // Вспомогательные методы
     protected void waitForPageLoad() {
         try {
             wait.until(d -> {
-                String readyState = (String) ((org.openqa.selenium.JavascriptExecutor) d)
+                String readyState = (String) ((JavascriptExecutor) d)
                         .executeScript("return document.readyState");
                 return "complete".equals(readyState);
             });
-            System.out.println("📄 Страница загружена");
         } catch (Exception e) {
             System.out.println("⚠️ Ошибка при ожидании загрузки страницы: " + e.getMessage());
         }
     }
 
-    // Универсальный метод для короткого ожидания
     protected void waitFor(int seconds) {
         try {
-            System.out.println("⏳ Ожидание " + seconds + " секунд...");
             Thread.sleep(seconds * 1000L);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
-    // Метод для возврата на главную страницу
-    protected void goToHomePage() {
-        System.out.println("🏠 Возвращаемся на главную страницу...");
-        driver.get(config.getWebBaseUrl());
-        waitForPageLoad();
+    protected boolean isElementPresent(By locator) {
+        try {
+            driver.findElement(locator);
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    protected void takeScreenshot(String testName) {
+        try {
+            if (driver instanceof TakesScreenshot) {
+                TakesScreenshot ts = (TakesScreenshot) driver;
+                byte[] screenshot = ts.getScreenshotAs(OutputType.BYTES);
+                // Здесь можно сохранить скриншот в файл
+                System.out.println("📸 Скриншот сделан для теста: " + testName);
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Не удалось сделать скриншот: " + e.getMessage());
+        }
     }
 }
