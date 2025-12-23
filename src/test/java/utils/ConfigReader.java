@@ -1,7 +1,9 @@
+// src/test/java/utils/ConfigReader.java
 package utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigReader {
@@ -10,12 +12,46 @@ public class ConfigReader {
     public ConfigReader() {
         properties = new Properties();
         try {
-            FileInputStream input = new FileInputStream("src/test/resources/config.properties");
-            properties.load(input);
-            input.close();
+            // Пробуем загрузить из разных мест
+            InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties");
+
+            if (input == null) {
+                // Если не нашли в classpath, пробуем файловый путь
+                input = new FileInputStream("src/test/resources/config.properties");
+            }
+
+            if (input != null) {
+                properties.load(input);
+                input.close();
+                System.out.println("✅ Конфигурационный файл загружен");
+            } else {
+                System.err.println("❌ Файл config.properties не найден");
+                setDefaultProperties();
+            }
         } catch (IOException e) {
-            System.err.println("Error loading config.properties: " + e.getMessage());
+            System.err.println("❌ Ошибка загрузки config.properties: " + e.getMessage());
+            setDefaultProperties();
         }
+    }
+
+    private void setDefaultProperties() {
+        System.out.println("⚙️ Используются значения по умолчанию");
+
+        // Web defaults
+        properties.setProperty("web.base.url", "https://openweathermap.org");
+        properties.setProperty("web.browser", "chrome");
+        properties.setProperty("web.timeout", "10");
+        properties.setProperty("web.api.key", "demo");
+
+        // Mobile defaults
+        properties.setProperty("mobile.platform.name", "Android");
+        properties.setProperty("mobile.platform.version", "14.0");
+        properties.setProperty("mobile.device.name", "Medium_Phone_API_36.1");
+        properties.setProperty("mobile.automation.name", "UiAutomator2");
+        properties.setProperty("mobile.app.package", "org.wikipedia");
+        properties.setProperty("mobile.app.activity", "org.wikipedia.main.MainActivity");
+        properties.setProperty("mobile.app.path", "src/test/resources/wikipedia.apk");
+        properties.setProperty("mobile.server.url", "http://127.0.0.1:4723");
     }
 
     // Web methods
@@ -28,7 +64,11 @@ public class ConfigReader {
     }
 
     public int getWebTimeout() {
-        return Integer.parseInt(properties.getProperty("web.timeout", "10"));
+        try {
+            return Integer.parseInt(properties.getProperty("web.timeout", "10"));
+        } catch (NumberFormatException e) {
+            return 10;
+        }
     }
 
     public String getWebApiKey() {
@@ -66,5 +106,10 @@ public class ConfigReader {
 
     public String getMobileServerUrl() {
         return properties.getProperty("mobile.server.url", "http://127.0.0.1:4723");
+    }
+
+    // Получить все свойства (для отладки)
+    public Properties getAllProperties() {
+        return new Properties(properties);
     }
 }
