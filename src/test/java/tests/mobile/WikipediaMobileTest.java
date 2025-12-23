@@ -5,7 +5,7 @@ import io.appium.java_client.AppiumBy;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class WikipediaLaunchTest extends MobileBaseTest {
+public class WikipediaMobileTest extends MobileBaseTest {
 
     @Test
     public void testWikipediaLaunchesSuccessfully() throws InterruptedException {
