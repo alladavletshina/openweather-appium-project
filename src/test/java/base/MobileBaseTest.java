@@ -65,9 +65,9 @@ public class MobileBaseTest {
     }
 
     // Вспомогательный метод для ожидания
-    protected void waitForSeconds(int seconds) {
+    protected void waitForSeconds(double seconds) {
         try {
-            Thread.sleep(seconds * 1000L);
+            Thread.sleep((long) (seconds * 1000L));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

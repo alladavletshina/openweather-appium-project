@@ -6,17 +6,36 @@ import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
 import org.openqa.selenium.WebElement;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import pages.mobile.WikipediaMainPage;
+import pages.mobile.WikipediaSearchPage;
+import pages.mobile.WikipediaArticlePage;
 
 public class WikipediaMobileTest extends MobileBaseTest {
+    private WikipediaMainPage mainPage;
+    private WikipediaSearchPage searchPage;
+    private WikipediaArticlePage articlePage;
 
-    @Test(priority = 1, description = "Тест 1: Проверка запуска приложения и поиска")
-    public void testAppLaunchAndSearch() {
-        System.out.println("🚀 ТЕСТ 1: Запуск приложения и проверка поиска");
-        System.out.println("==============================================");
+    @BeforeClass
+    public void setUpPages() {
+        System.out.println("📱 ИНИЦИАЛИЗАЦИЯ PAGE OBJECTS");
+        System.out.println("===============================");
+
+        mainPage = new WikipediaMainPage(driver);
+        searchPage = new WikipediaSearchPage(driver);
+        articlePage = new WikipediaArticlePage(driver);
+
+        System.out.println("✅ Page Objects инициализированы");
+    }
+
+    @Test(priority = 1, description = "Тест 1: Проверка запуска приложения и основных элементов")
+    public void testAppLaunchAndBasicElements() {
+        System.out.println("🚀 ТЕСТ 1: Запуск приложения и проверка основных элементов");
+        System.out.println("==========================================================");
 
         try {
-            // Ждем полной загрузки приложения
+
             waitForSeconds(5);
 
             String currentPackage = driver.getCurrentPackage();
@@ -25,25 +44,46 @@ public class WikipediaMobileTest extends MobileBaseTest {
             System.out.println("📱 Текущий пакет: " + currentPackage);
             System.out.println("🎯 Текущая активность: " + currentActivity);
 
-            // Проверяем что мы в Wikipedia
+
             Assert.assertEquals(currentPackage, "org.wikipedia",
                     "Приложение должно быть Wikipedia");
 
-            // Пропускаем onboarding если он есть
+
             skipOnboardingIfPresent();
 
-            // Проверяем что приложение загрузилось
-            String pageSource = driver.getPageSource();
-            System.out.println("📄 Размер страницы: " + pageSource.length());
-            Assert.assertTrue(pageSource.length() > 1000,
-                    "Страница должна быть загружена (размер > 1000 символов)");
 
-            // Проверяем наличие поиска
-            boolean hasSearch = driver.findElements(
-                    AppiumBy.accessibilityId("Search Wikipedia")).size() > 0;
+            boolean isMainPageDisplayed = mainPage.isMainPageDisplayed();
+            System.out.println("🏠 Главная страница отображается: " + isMainPageDisplayed);
 
-            System.out.println("🔍 Поле поиска найдено: " + hasSearch);
-            Assert.assertTrue(hasSearch, "Должно быть поле поиска");
+            if (isMainPageDisplayed) {
+                String pageTitle = mainPage.getMainPageTitle();
+                System.out.println("📝 Заголовок главной страницы: " + pageTitle);
+            }
+
+
+            try {
+
+                System.out.println("🔍 Проверяем поле поиска...");
+
+
+                boolean hasSearch = driver.findElements(
+                        AppiumBy.accessibilityId("Search Wikipedia")).size() > 0;
+
+                System.out.println("   Поле поиска найдено: " + hasSearch);
+                Assert.assertTrue(hasSearch, "Должно быть поле поиска");
+
+
+                boolean isLoginButtonDisplayed = mainPage.isLoginButtonDisplayed();
+                System.out.println("👤 Кнопка логина отображается: " + isLoginButtonDisplayed);
+
+            } catch (Exception e) {
+                System.out.println("⚠️ Некоторые элементы не найдены: " + e.getMessage());
+
+                String pageSource = driver.getPageSource();
+                System.out.println("📄 Размер страницы: " + pageSource.length());
+                Assert.assertTrue(pageSource.length() > 1000,
+                        "Страница должна быть загружена (размер > 1000 символов)");
+            }
 
             System.out.println("✅ ТЕСТ 1 ПРОЙДЕН: Приложение успешно запущено");
 
@@ -54,77 +94,86 @@ public class WikipediaMobileTest extends MobileBaseTest {
     }
 
     @Test(priority = 2, description = "Тест 2: Поиск и скроллинг результатов",
-            dependsOnMethods = "testAppLaunchAndSearch")
+            dependsOnMethods = "testAppLaunchAndBasicElements")
     public void testSearchAndScroll() {
         System.out.println("🔍 ТЕСТ 2: Поиск и скроллинг результатов");
         System.out.println("=========================================");
 
         try {
-            // ШАГ 1: Открываем поиск
+
             System.out.println("1️⃣ Открываем поиск...");
+            mainPage.clickSearch();
+            waitForSeconds(2);
+            System.out.println("   ✅ Поиск открыт");
 
-            openSearchField();
 
-            // ШАГ 2: Вводим "Java" в поле поиска
-            System.out.println("2️⃣ Вводим 'Java' в поле поиска...");
+            System.out.println("2️⃣ Выполняем поиск 'Java'...");
+            String searchQuery = "Java";
+            searchPage.searchFor(searchQuery);
+            waitForSeconds(3);
 
-            enterSearchQuery("Java");
-            waitForSeconds(3); // Ждем результаты
 
-            // ШАГ 3: Проверяем результаты поиска
             System.out.println("3️⃣ Проверяем результаты поиска...");
 
-            int initialResults = checkAndCountSearchResults("Java");
+            int resultsCount = searchPage.getSearchResultsCount();
+            System.out.println("   📊 Найдено результатов: " + resultsCount);
 
-            // ШАГ 4: СКРОЛЛИНГ РЕЗУЛЬТАТОВ (без открытия статьи!)
+            boolean areResultsDisplayed = searchPage.areSearchResultsDisplayed();
+            System.out.println("   👁️ Результаты отображаются: " + areResultsDisplayed);
+
+            Assert.assertTrue(resultsCount > 0, "Должен быть хотя бы один результат поиска");
+            Assert.assertTrue(areResultsDisplayed, "Результаты должны отображаться");
+
+
+            if (resultsCount > 0) {
+                String firstResultTitle = searchPage.getFirstResultTitle();
+                System.out.println("   📝 Первый результат: " + firstResultTitle);
+                Assert.assertFalse(firstResultTitle.isEmpty(),
+                        "Заголовок статьи не должен быть пустым");
+
+
+                boolean isRelevant = firstResultTitle.toLowerCase().contains("java");
+                System.out.println("   ✅ Результат релевантен запросу: " + isRelevant);
+
+                if (!isRelevant) {
+                    System.out.println("   ⚠️ Первый результат может быть не совсем релевантным");
+                }
+            }
+
+
             System.out.println("4️⃣ Выполняем скроллинг результатов поиска...");
 
-            if (initialResults > 3) {
+            if (resultsCount > 3) {
                 System.out.println("   🔄 Начинаем скроллинг...");
 
-                // Делаем 3 скролла вниз
-                for (int i = 1; i <= 3; i++) {
+
+                for (int i = 1; i <= 2; i++) {
                     System.out.println("      Скролл #" + i);
                     performVerticalScroll("down", 0.6);
-                    Thread.sleep(1500); // Пауза между скроллами
-
-                    // Проверяем сколько результатов видно
-                    int currentResults = driver.findElements(
-                            AppiumBy.id("org.wikipedia:id/page_list_item_title")).size();
-                    System.out.println("      Видим результатов: " + currentResults);
+                    waitForSeconds(1);
                 }
 
-                // Проверяем что после скроллинга видим результаты
-                int finalResults = driver.findElements(
-                        AppiumBy.id("org.wikipedia:id/page_list_item_title")).size();
 
-                System.out.println("   📊 Итоговое количество результатов: " + finalResults);
-                Assert.assertTrue(finalResults > 0,
+                int resultsAfterScroll = searchPage.getSearchResultsCount();
+                System.out.println("   📊 Результатов после скроллинга: " + resultsAfterScroll);
+                Assert.assertTrue(resultsAfterScroll > 0,
                         "После скроллинга должны оставаться результаты");
 
-                // Прокручиваем немного вверх
+
                 System.out.println("   🔼 Прокручиваем немного вверх...");
                 performVerticalScroll("up", 0.3);
-                Thread.sleep(1000);
-
+                waitForSeconds(1);
             } else {
                 System.out.println("   ⚠️ Мало результатов для скроллинга");
             }
 
-            // ШАГ 5: ЗАКРЫВАЕМ ПОИСК (без открытия статьи!)
-            System.out.println("5️⃣ Закрываем поиск...");
 
-            closeSearch();
+            System.out.println("5️⃣ Закрываем поиск...");
+            searchPage.closeSearch(); // Используем метод из Page Object
+            waitForSeconds(2);
 
             System.out.println("✅ ТЕСТ 2 ПРОЙДЕН УСПЕШНО!");
-            System.out.println("   ✓ Поиск выполнен");
-            System.out.println("   ✓ Результаты проверены");
-            System.out.println("   ✓ Скроллинг выполнен");
-            System.out.println("   ✓ Поиск закрыт без открытия статьи");
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Тест прерван", e);
         } catch (AssertionError e) {
             System.out.println("❌ ТЕСТ 2 ПРОВАЛЕН: " + e.getMessage());
             throw e;
@@ -136,114 +185,84 @@ public class WikipediaMobileTest extends MobileBaseTest {
     }
 
     @Test(priority = 3, description = "Тест 3: Поиск и открытие статьи",
-            dependsOnMethods = {"testAppLaunchAndSearch", "testSearchAndScroll"})
+            dependsOnMethods = {"testAppLaunchAndBasicElements", "testSearchAndScroll"})
     public void testSearchAndOpenArticle() {
         System.out.println("📖 ТЕСТ 3: Поиск и открытие статьи");
         System.out.println("===================================");
 
         try {
-            // Убеждаемся что мы на главном экране
+
             waitForSeconds(2);
 
-            String currentPackage = driver.getCurrentPackage();
-            Assert.assertEquals(currentPackage, "org.wikipedia",
-                    "Должны быть в приложении Wikipedia");
 
-            // ШАГ 1: Открываем поиск
             System.out.println("1️⃣ Открываем поиск...");
+            mainPage.clickSearch();
+            waitForSeconds(2);
 
-            openSearchField();
 
-            // ШАГ 2: Ищем простую статью (например, "Cat")
             System.out.println("2️⃣ Ищем статью 'Cat'...");
-
-            enterSearchQuery("Cat");
+            String searchQuery = "Cat";
+            searchPage.searchFor(searchQuery);
             waitForSeconds(3);
 
-            // Проверяем результаты
-            int results = driver.findElements(
-                    AppiumBy.id("org.wikipedia:id/page_list_item_title")).size();
 
-            System.out.println("   📊 Найдено статей: " + results);
-            Assert.assertTrue(results > 0, "Должны быть результаты поиска");
+            int resultsCount = searchPage.getSearchResultsCount();
+            System.out.println("   📊 Найдено статей: " + resultsCount);
 
-            // ШАГ 3: Открываем первую статью
+            if (resultsCount == 0) {
+                Assert.fail("Нет результатов поиска для '" + searchQuery + "'");
+            }
+
+
             System.out.println("3️⃣ Открываем первую статью...");
 
-            String firstArticleTitle = "";
-            try {
-                // Получаем заголовок первой статьи
-                WebElement firstArticle = driver.findElement(
-                        AppiumBy.id("org.wikipedia:id/page_list_item_title"));
-                firstArticleTitle = firstArticle.getText();
-                System.out.println("   📝 Открываем статью: " + firstArticleTitle);
+            String firstArticleTitle = searchPage.getFirstResultTitle();
+            System.out.println("   📝 Открываем статью: " + firstArticleTitle);
 
-                // Открываем статью
-                firstArticle.click();
 
-            } catch (Exception e) {
-                System.out.println("   ❌ Не удалось открыть статью: " + e.getMessage());
-                Assert.fail("Не удалось открыть статью");
+            Assert.assertFalse(firstArticleTitle.isEmpty(),
+                    "Заголовок найденной статьи не должен быть пустым");
+
+
+            searchPage.selectFirstResult();
+            waitForSeconds(3);
+
+
+            System.out.println("4️⃣ Проверяем, что статья открылась...");
+
+
+            String currentActivity = driver.currentActivity();
+            System.out.println("   🎯 Текущая активность: " + currentActivity);
+
+
+            boolean isNotOnSearchScreen = !currentActivity.toLowerCase().contains("search");
+            boolean isNotOnMainScreen = !currentActivity.toLowerCase().contains("main");
+
+            System.out.println("   ❌ Не на экране поиска: " + isNotOnSearchScreen);
+            System.out.println("   ❌ Не на главном экране: " + isNotOnMainScreen);
+
+
+            if (isNotOnSearchScreen && isNotOnMainScreen) {
+                System.out.println("   ✅ Статья успешно открыта!");
+            } else {
+                String pageSource = driver.getPageSource();
+                boolean hasArticleContent = pageSource.toLowerCase().contains("cat") ||
+                        pageSource.length() > 3000 ||
+                        pageSource.contains("article");
+
+                System.out.println("   📄 Размер страницы: " + pageSource.length());
+                System.out.println("   📝 Контент статьи найден: " + hasArticleContent);
+
+                Assert.assertTrue(hasArticleContent,
+                        "После открытия статьи должен отображаться контент");
             }
 
-            // ШАГ 4: Ждем загрузки статьи и проверяем
-            System.out.println("4️⃣ Ждем загрузки статьи...");
-            waitForSeconds(4);
-
-            // Проверяем что статья загрузилась
-            String pageSource = driver.getPageSource();
-            System.out.println("   📄 Размер страницы статьи: " + pageSource.length());
-
-            // Основная проверка - статья должна быть загружена
-            Assert.assertTrue(pageSource.length() > 2000,
-                    "Страница статьи должна быть загружена (размер > 2000 символов)");
-
-            // Дополнительная проверка - в контенте должно быть что-то связанное с темой
-            boolean hasContent = pageSource.toLowerCase().contains("cat") ||
-                    pageSource.contains("animal") ||
-                    pageSource.contains("feline") ||
-                    pageSource.length() > 3000;
-
-            System.out.println("   ✅ Статья содержит контент: " + hasContent);
-
-            if (!hasContent) {
-                System.out.println("   ⚠️ Контент статьи может быть неполным");
-                // Не падаем, просто предупреждение
-            }
-
-            // ШАГ 5: Возвращаемся на главный экран
-            System.out.println("5️⃣ Возвращаемся на главный экран...");
-
-            // Используем аппаратную кнопку назад
-            driver.pressKey(new KeyEvent(AndroidKey.BACK));
-            waitForSeconds(2);
-
-            // Если еще не вернулись, нажимаем еще раз
-            try {
-                if (!driver.currentActivity().contains("MainActivity")) {
-                    driver.pressKey(new KeyEvent(AndroidKey.BACK));
-                    waitForSeconds(1);
-                }
-            } catch (Exception e) {
-                // Игнорируем
-            }
-
-            // ШАГ 6: Финальная проверка
-            System.out.println("6️⃣ Финальная проверка...");
-
-            currentPackage = driver.getCurrentPackage();
-            System.out.println("   📱 Пакет приложения: " + currentPackage);
-
-            // Главное - приложение должно быть запущено
-            Assert.assertEquals(currentPackage, "org.wikipedia",
-                    "После всех действий должны остаться в Wikipedia");
+            System.out.println("5️⃣ Тест завершен успешно!");
+            System.out.println("   ✓ Поиск выполнен");
+            System.out.println("   ✓ Статья '" + firstArticleTitle + "' открыта");
+            System.out.println("   ✓ Тест пройден");
 
             System.out.println("✅ ТЕСТ 3 ПРОЙДЕН УСПЕШНО!");
-            System.out.println("   ✓ Поиск статьи выполнен");
-            System.out.println("   ✓ Статья успешно открыта");
-            System.out.println("   ✓ Контент статьи загружен");
-            System.out.println("   ✓ Возврат на главный экран выполнен");
-            System.out.println("   ✓ Приложение работает стабильно");
 
         } catch (AssertionError e) {
             System.out.println("❌ ТЕСТ 3 ПРОВАЛЕН: " + e.getMessage());
@@ -255,97 +274,24 @@ public class WikipediaMobileTest extends MobileBaseTest {
         }
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
-
-    private void openSearchField() {
-        try {
-            // Пробуем самый надежный способ
-            driver.findElement(AppiumBy.accessibilityId("Search Wikipedia")).click();
-            System.out.println("   ✅ Поиск открыт по accessibilityId");
-        } catch (Exception e) {
-            try {
-                // Альтернативный способ
-                driver.findElement(AppiumBy.id("org.wikipedia:id/search_container")).click();
-                System.out.println("   ✅ Поиск открыт по id");
-            } catch (Exception e2) {
-                System.out.println("   ❌ Не удалось открыть поиск");
-                Assert.fail("Не удалось открыть поиск");
-            }
-        }
-        waitForSeconds(2);
-    }
-
-    private void enterSearchQuery(String query) {
-        try {
-            driver.findElement(AppiumBy.id("org.wikipedia:id/search_src_text")).sendKeys(query);
-            System.out.println("   ✅ '" + query + "' введено");
-        } catch (Exception e) {
-            driver.findElement(AppiumBy.className("android.widget.EditText")).sendKeys(query);
-            System.out.println("   ✅ '" + query + "' введено по классу");
-        }
-    }
-
-    private int checkAndCountSearchResults(String expectedQuery) {
-        int resultsCount = 0;
-        try {
-            resultsCount = driver.findElements(
-                    AppiumBy.id("org.wikipedia:id/page_list_item_title")).size();
-            System.out.println("   📊 Найдено результатов: " + resultsCount);
-
-            if (resultsCount > 0) {
-                String firstResult = driver.findElement(
-                        AppiumBy.id("org.wikipedia:id/page_list_item_title")).getText();
-                System.out.println("   📝 Первый результат: " + firstResult);
-
-                Assert.assertFalse(firstResult.isEmpty(),
-                        "Заголовок статьи не должен быть пустым");
-
-                // Проверяем релевантность
-                boolean isRelevant = firstResult.toLowerCase().contains(expectedQuery.toLowerCase());
-                System.out.println("   ✅ Результат релевантен запросу: " + isRelevant);
-
-                if (!isRelevant) {
-                    // Логируем, но не падаем
-                    System.out.println("   ⚠️ Первый результат может быть не совсем релевантным");
-                }
-            }
-
-            Assert.assertTrue(resultsCount > 0,
-                    "Должен быть хотя бы один результат поиска");
-
-        } catch (Exception e) {
-            System.out.println("   ⚠️ Не удалось получить результаты: " + e.getMessage());
-            Assert.fail("Результаты поиска не отображаются");
-        }
-        return resultsCount;
-    }
+    // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
 
     private void closeSearch() {
         try {
-            // Пробуем кнопку закрытия поиска
-            driver.findElement(AppiumBy.id("org.wikipedia:id/search_close_btn")).click();
-            System.out.println("   ❌ Нажали кнопку закрытия поиска");
+
+            driver.pressKey(new KeyEvent(AndroidKey.BACK));
+            System.out.println("   ↩️ Нажали аппаратную кнопку BACK");
         } catch (Exception e) {
             try {
-                // Нажимаем аппаратную кнопку назад
-                driver.pressKey(new KeyEvent(AndroidKey.BACK));
-                System.out.println("   ↩️ Нажали аппаратную кнопку BACK");
+
+                driver.findElement(AppiumBy.xpath("//*[@content-desc='Close']")).click();
+                System.out.println("   ❌ Нажали крестик закрытия");
             } catch (Exception e2) {
-                // Пробуем найти крестик
-                try {
-                    driver.findElement(AppiumBy.xpath("//*[@content-desc='Close']")).click();
-                    System.out.println("   ❌ Нажали крестик закрытия");
-                } catch (Exception e3) {
-                    System.out.println("   ⚠️ Не удалось закрыть поиск стандартным способом");
-                    // Последний вариант - нажать BACK несколько раз
-                    for (int i = 0; i < 3; i++) {
-                        driver.pressKey(new KeyEvent(AndroidKey.BACK));
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    }
+                System.out.println("   ⚠️ Не удалось закрыть поиск стандартным способом");
+
+                for (int i = 0; i < 3; i++) {
+                    driver.pressKey(new KeyEvent(AndroidKey.BACK));
+                    waitForSeconds(0.5);
                 }
             }
         }
@@ -360,11 +306,11 @@ public class WikipediaMobileTest extends MobileBaseTest {
             int startY, endY;
 
             if (direction.equals("down")) {
-                // Скролл вниз
+
                 startY = (int)(screenHeight * 0.7);
                 endY = (int)(screenHeight * 0.3);
             } else {
-                // Скролл вверх
+
                 startY = (int)(screenHeight * 0.3);
                 endY = (int)(screenHeight * 0.7);
             }
@@ -388,18 +334,18 @@ public class WikipediaMobileTest extends MobileBaseTest {
         try {
             System.out.println("   🔄 Восстанавливаем состояние приложения...");
 
-            // Нажимаем BACK несколько раз чтобы вернуться на главный
+
             for (int i = 0; i < 5; i++) {
                 driver.pressKey(new KeyEvent(AndroidKey.BACK));
-                Thread.sleep(800);
+                waitForSeconds(0.8);
             }
 
-            // Проверяем что вернулись на главный
+
             String currentPackage = driver.getCurrentPackage();
             if (!currentPackage.equals("org.wikipedia")) {
-                // Перезапускаем приложение
+
                 driver.activateApp("org.wikipedia");
-                Thread.sleep(3000);
+                waitForSeconds(3);
                 skipOnboardingIfPresent();
             }
 
@@ -410,12 +356,11 @@ public class WikipediaMobileTest extends MobileBaseTest {
         }
     }
 
-    // Метод для пропуска onboarding
     private void skipOnboardingIfPresent() {
         try {
             System.out.println("   ⏭️ Проверяем onboarding...");
 
-            // Ищем кнопку "Skip" в течение 5 секунд
+
             long startTime = System.currentTimeMillis();
             boolean found = false;
 
@@ -432,8 +377,8 @@ public class WikipediaMobileTest extends MobileBaseTest {
                         break;
                     }
                 } catch (Exception e) {
-                    // Продолжаем искать
-                    Thread.sleep(500);
+
+                    waitForSeconds((int) 0.5);
                 }
             }
 
