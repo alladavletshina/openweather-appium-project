@@ -44,16 +44,32 @@ public class DriverManager {
         WebDriverManager.chromedriver().setup();
 
         ChromeOptions options = new ChromeOptions();
+
+        // УБИРАЕМ автоматическое открытие в полноэкранном режиме
         options.addArguments("--start-maximized");
         options.addArguments("--disable-notifications");
         options.addArguments("--disable-popup-blocking");
         options.addArguments("--remote-allow-origins=*");
+
+        // УСКОРЯЕМ загрузку - отключаем некоторые функции
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+
+        // УСТАНАВЛИВАЕМ языковые настройки
+        options.addArguments("--lang=en-US");
+
+        // ИГНОРИРУЕМ ошибки сертификатов (для тестов)
+        options.setAcceptInsecureCerts(true);
 
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("credentials_enable_service", false);
         prefs.put("profile.password_manager_enabled", false);
+        // ОТКЛЮЧАЕМ предупреждения безопасности
+        prefs.put("profile.default_content_setting_values.notifications", 2);
         options.setExperimentalOption("prefs", prefs);
 
         return new ChromeDriver(options);
@@ -64,6 +80,8 @@ public class DriverManager {
 
         FirefoxOptions options = new FirefoxOptions();
         options.addArguments("--start-maximized");
+        options.addArguments("--disable-notifications");
+        options.setAcceptInsecureCerts(true);
 
         return new FirefoxDriver(options);
     }
@@ -74,16 +92,29 @@ public class DriverManager {
         EdgeOptions options = new EdgeOptions();
         options.addArguments("--start-maximized");
         options.addArguments("--disable-notifications");
+        options.addArguments("--inprivate"); // Режим инкогнито
+        options.setAcceptInsecureCerts(true);
 
         return new EdgeDriver(options);
     }
 
     private static void setupDriverCommonSettings(WebDriver driver) {
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(config.getWebTimeout()));
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
-        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
+        // УСТАНАВЛИВАЕМ ТАЙМАУТЫ из конфига
+        int pageLoadTimeout = config.getWebPageLoadTimeout();
+        int implicitWait = config.getWebImplicitWait();
+        int scriptTimeout = 30;
 
-        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(pageLoadTimeout)); // УВЕЛИЧИВАЕМ
+        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(scriptTimeout));
+
+        // МЕНЬШЕ РИСКОВ: не максимизируем окно сразу
+        // driver.manage().window().maximize();
+
+        System.out.println("⏱️  Установлены таймауты:");
+        System.out.println("   • Page Load: " + pageLoadTimeout + " сек");
+        System.out.println("   • Implicit: " + implicitWait + " сек");
+        System.out.println("   • Script: " + scriptTimeout + " сек");
     }
 
     public static void closeDriver() {
@@ -96,5 +127,14 @@ public class DriverManager {
                 System.err.println("❌ Ошибка при закрытии драйвера: " + e.getMessage());
             }
         }
+    }
+
+    // НОВЫЙ МЕТОД: перезагрузка драйвера
+    public static void restartDriver() {
+        if (driver != null) {
+            closeDriver();
+        }
+        driver = null;
+        getWebDriver();
     }
 }

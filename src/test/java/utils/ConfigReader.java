@@ -11,14 +11,10 @@ public class ConfigReader {
     public ConfigReader() {
         properties = new Properties();
         try {
-
             InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties");
-
             if (input == null) {
-
                 input = new FileInputStream("src/test/resources/config.properties");
             }
-
             properties.load(input);
             input.close();
             System.out.println("✅ Конфигурационный файл загружен");
@@ -31,9 +27,12 @@ public class ConfigReader {
     private void setDefaultProperties() {
         System.out.println("⚙️ Используются значения по умолчанию");
 
+        // УВЕЛИЧИВАЕМ ТАЙМАУТЫ
         properties.setProperty("web.base.url", "https://openweathermap.org");
         properties.setProperty("web.browser", "chrome");
-        properties.setProperty("web.timeout", "10");
+        properties.setProperty("web.timeout", "30"); // Было 10, стало 30
+        properties.setProperty("web.page.load.timeout", "60"); // НОВОЕ: таймаут загрузки страницы
+        properties.setProperty("web.implicit.wait", "10");
         properties.setProperty("web.api.key", "demo");
 
         properties.setProperty("mobile.platform.name", "Android");
@@ -56,12 +55,31 @@ public class ConfigReader {
 
     public int getWebTimeout() {
         try {
-            return Integer.parseInt(properties.getProperty("web.timeout", "10"));
+            return Integer.parseInt(properties.getProperty("web.timeout", "30")); // Увеличено
+        } catch (NumberFormatException e) {
+            return 30;
+        }
+    }
+
+    // НОВЫЙ МЕТОД: таймаут загрузки страницы
+    public int getWebPageLoadTimeout() {
+        try {
+            return Integer.parseInt(properties.getProperty("web.page.load.timeout", "60"));
+        } catch (NumberFormatException e) {
+            return 60;
+        }
+    }
+
+    // НОВЫЙ МЕТОД: неявное ожидание
+    public int getWebImplicitWait() {
+        try {
+            return Integer.parseInt(properties.getProperty("web.implicit.wait", "10"));
         } catch (NumberFormatException e) {
             return 10;
         }
     }
 
+    // Остальные методы остаются без изменений
     public String getMobilePlatformName() {
         return properties.getProperty("mobile.platform.name", "Android");
     }
