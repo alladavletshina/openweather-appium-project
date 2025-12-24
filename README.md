@@ -47,7 +47,7 @@ cd openweather-appium-project
 
 - Откройте Android Studio 
 - Создайте или используйте существующий эмулятор Android с API 30+ 
-- Запустите эмулятор
+- Запустите эмулятор командой emulator -avd Medium_Phone_API_36.1 -no-snapshot &
 
 <img width="450" height="1792" alt="image" src="https://github.com/user-attachments/assets/35193f53-d750-47f9-8891-f02a556ef0f1" />
 
