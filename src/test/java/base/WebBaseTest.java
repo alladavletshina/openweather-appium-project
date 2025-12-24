@@ -19,15 +19,12 @@ public class WebBaseTest {
         config = new ConfigReader();
         driver = DriverManager.getWebDriver();
 
-        // Устанавливаем таймауты
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(config.getWebTimeout()));
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
         driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
 
-        // Создаем явные ожидания
         wait = new WebDriverWait(driver, Duration.ofSeconds(config.getWebTimeout()));
 
-        // Максимизируем окно
         driver.manage().window().maximize();
 
         System.out.println("✅ Драйвер инициализирован");
@@ -62,7 +59,6 @@ public class WebBaseTest {
         System.out.println("=".repeat(50) + "\n");
     }
 
-    // Вспомогательные методы
     protected void waitForPageLoad() {
         try {
             wait.until(d -> {
@@ -75,33 +71,11 @@ public class WebBaseTest {
         }
     }
 
-    protected void waitFor(int seconds) {
+    protected void waitFor() {
         try {
-            Thread.sleep(seconds * 1000L);
+            Thread.sleep(1000L);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    protected boolean isElementPresent(By locator) {
-        try {
-            driver.findElement(locator);
-            return true;
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    protected void takeScreenshot(String testName) {
-        try {
-            if (driver instanceof TakesScreenshot) {
-                TakesScreenshot ts = (TakesScreenshot) driver;
-                byte[] screenshot = ts.getScreenshotAs(OutputType.BYTES);
-                // Здесь можно сохранить скриншот в файл
-                System.out.println("📸 Скриншот сделан для теста: " + testName);
-            }
-        } catch (Exception e) {
-            System.out.println("⚠️ Не удалось сделать скриншот: " + e.getMessage());
         }
     }
 }

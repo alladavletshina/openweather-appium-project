@@ -1,35 +1,27 @@
-// src/test/java/utils/ConfigReader.java
 package utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 public class ConfigReader {
-    private Properties properties;
+    private final Properties properties;
 
     public ConfigReader() {
         properties = new Properties();
         try {
-            // Пробуем загрузить из разных мест
+
             InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties");
 
             if (input == null) {
-                // Если не нашли в classpath, пробуем файловый путь
+
                 input = new FileInputStream("src/test/resources/config.properties");
             }
 
-            if (input != null) {
-                properties.load(input);
-                input.close();
-                System.out.println("✅ Конфигурационный файл загружен");
-            } else {
-                System.err.println("❌ Файл config.properties не найден");
-                setDefaultProperties();
-            }
+            properties.load(input);
+            input.close();
+            System.out.println("✅ Конфигурационный файл загружен");
         } catch (IOException e) {
             System.err.println("❌ Ошибка загрузки config.properties: " + e.getMessage());
             setDefaultProperties();
@@ -39,13 +31,11 @@ public class ConfigReader {
     private void setDefaultProperties() {
         System.out.println("⚙️ Используются значения по умолчанию");
 
-        // Web defaults
         properties.setProperty("web.base.url", "https://openweathermap.org");
         properties.setProperty("web.browser", "chrome");
         properties.setProperty("web.timeout", "10");
         properties.setProperty("web.api.key", "demo");
 
-        // Mobile defaults
         properties.setProperty("mobile.platform.name", "Android");
         properties.setProperty("mobile.platform.version", "14.0");
         properties.setProperty("mobile.device.name", "Medium_Phone_API_36.1");
@@ -56,7 +46,6 @@ public class ConfigReader {
         properties.setProperty("mobile.server.url", "http://127.0.0.1:4723");
     }
 
-    // Web methods
     public String getWebBaseUrl() {
         return properties.getProperty("web.base.url", "https://openweathermap.org");
     }
@@ -73,21 +62,12 @@ public class ConfigReader {
         }
     }
 
-    public String getWebApiKey() {
-        return properties.getProperty("web.api.key", "demo");
-    }
-
-    // Mobile methods
     public String getMobilePlatformName() {
         return properties.getProperty("mobile.platform.name", "Android");
     }
 
     public String getMobileDeviceName() {
         return properties.getProperty("mobile.device.name", "Pixel_4_API_30");
-    }
-
-    public String getMobilePlatformVersion() {
-        return properties.getProperty("mobile.platform.version", "11.0");
     }
 
     public String getMobileAutomationName() {
@@ -102,52 +82,7 @@ public class ConfigReader {
         return properties.getProperty("mobile.app.activity", "org.wikipedia.main.MainActivity");
     }
 
-    public String getMobileAppPath() {
-        return properties.getProperty("mobile.app.path", "src/test/resources/wikipedia.apk");
-    }
-
     public String getMobileServerUrl() {
         return properties.getProperty("mobile.server.url", "http://127.0.0.1:4723");
-    }
-
-    // Получить все свойства (для отладки)
-    public Properties getAllProperties() {
-        return new Properties(properties);
-    }
-
-    // Новые методы для веб-тестов
-    public int getPageLoadTimeout() {
-        try {
-            return Integer.parseInt(properties.getProperty("web.page.load.timeout", "30"));
-        } catch (NumberFormatException e) {
-            return 30;
-        }
-    }
-
-    public int getScriptTimeout() {
-        try {
-            return Integer.parseInt(properties.getProperty("web.script.timeout", "30"));
-        } catch (NumberFormatException e) {
-            return 30;
-        }
-    }
-
-    public boolean isHeadless() {
-        return Boolean.parseBoolean(properties.getProperty("web.headless", "false"));
-    }
-
-    public String getChromeOptions() {
-        return properties.getProperty("web.chrome.options", "");
-    }
-
-    // Метод для получения всех веб-настроек
-    public Map<String, Object> getWebSettings() {
-        Map<String, Object> settings = new HashMap<>();
-        settings.put("baseUrl", getWebBaseUrl());
-        settings.put("browser", getWebBrowser());
-        settings.put("timeout", getWebTimeout());
-        settings.put("pageLoadTimeout", getPageLoadTimeout());
-        settings.put("headless", isHeadless());
-        return settings;
     }
 }

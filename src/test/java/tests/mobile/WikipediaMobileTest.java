@@ -10,12 +10,10 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import pages.mobile.WikipediaMainPage;
 import pages.mobile.WikipediaSearchPage;
-import pages.mobile.WikipediaArticlePage;
 
 public class WikipediaMobileTest extends MobileBaseTest {
     private WikipediaMainPage mainPage;
     private WikipediaSearchPage searchPage;
-    private WikipediaArticlePage articlePage;
 
     @BeforeClass
     public void setUpPages() {
@@ -24,7 +22,6 @@ public class WikipediaMobileTest extends MobileBaseTest {
 
         mainPage = new WikipediaMainPage(driver);
         searchPage = new WikipediaSearchPage(driver);
-        articlePage = new WikipediaArticlePage(driver);
 
         System.out.println("✅ Page Objects инициализированы");
     }
@@ -66,8 +63,8 @@ public class WikipediaMobileTest extends MobileBaseTest {
                 System.out.println("🔍 Проверяем поле поиска...");
 
 
-                boolean hasSearch = driver.findElements(
-                        AppiumBy.accessibilityId("Search Wikipedia")).size() > 0;
+                boolean hasSearch = !driver.findElements(
+                        AppiumBy.accessibilityId("Search Wikipedia")).isEmpty();
 
                 System.out.println("   Поле поиска найдено: " + hasSearch);
                 Assert.assertTrue(hasSearch, "Должно быть поле поиска");
@@ -125,19 +122,17 @@ public class WikipediaMobileTest extends MobileBaseTest {
             Assert.assertTrue(areResultsDisplayed, "Результаты должны отображаться");
 
 
-            if (resultsCount > 0) {
-                String firstResultTitle = searchPage.getFirstResultTitle();
-                System.out.println("   📝 Первый результат: " + firstResultTitle);
-                Assert.assertFalse(firstResultTitle.isEmpty(),
-                        "Заголовок статьи не должен быть пустым");
+            String firstResultTitle = searchPage.getFirstResultTitle();
+            System.out.println("   📝 Первый результат: " + firstResultTitle);
+            Assert.assertFalse(firstResultTitle.isEmpty(),
+                    "Заголовок статьи не должен быть пустым");
 
 
-                boolean isRelevant = firstResultTitle.toLowerCase().contains("java");
-                System.out.println("   ✅ Результат релевантен запросу: " + isRelevant);
+            boolean isRelevant = firstResultTitle.toLowerCase().contains("java");
+            System.out.println("   ✅ Результат релевантен запросу: " + isRelevant);
 
-                if (!isRelevant) {
-                    System.out.println("   ⚠️ Первый результат может быть не совсем релевантным");
-                }
+            if (!isRelevant) {
+                System.out.println("   ⚠️ Первый результат может быть не совсем релевантным");
             }
 
 
@@ -235,8 +230,14 @@ public class WikipediaMobileTest extends MobileBaseTest {
             System.out.println("   🎯 Текущая активность: " + currentActivity);
 
 
-            boolean isNotOnSearchScreen = !currentActivity.toLowerCase().contains("search");
-            boolean isNotOnMainScreen = !currentActivity.toLowerCase().contains("main");
+            boolean isNotOnSearchScreen = false;
+            if (currentActivity != null) {
+                isNotOnSearchScreen = !currentActivity.toLowerCase().contains("search");
+            }
+            boolean isNotOnMainScreen = false;
+            if (currentActivity != null) {
+                isNotOnMainScreen = !currentActivity.toLowerCase().contains("main");
+            }
 
             System.out.println("   ❌ Не на экране поиска: " + isNotOnSearchScreen);
             System.out.println("   ❌ Не на главном экране: " + isNotOnMainScreen);
@@ -276,43 +277,19 @@ public class WikipediaMobileTest extends MobileBaseTest {
 
     // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
 
-    private void closeSearch() {
-        try {
-
-            driver.pressKey(new KeyEvent(AndroidKey.BACK));
-            System.out.println("   ↩️ Нажали аппаратную кнопку BACK");
-        } catch (Exception e) {
-            try {
-
-                driver.findElement(AppiumBy.xpath("//*[@content-desc='Close']")).click();
-                System.out.println("   ❌ Нажали крестик закрытия");
-            } catch (Exception e2) {
-                System.out.println("   ⚠️ Не удалось закрыть поиск стандартным способом");
-
-                for (int i = 0; i < 3; i++) {
-                    driver.pressKey(new KeyEvent(AndroidKey.BACK));
-                    waitForSeconds(0.5);
-                }
-            }
-        }
-        waitForSeconds(2);
-    }
-
     private void performVerticalScroll(String direction, double percent) {
         try {
             int screenWidth = driver.manage().window().getSize().getWidth();
             int screenHeight = driver.manage().window().getSize().getHeight();
 
-            int startY, endY;
+            int startY;
 
             if (direction.equals("down")) {
 
                 startY = (int)(screenHeight * 0.7);
-                endY = (int)(screenHeight * 0.3);
             } else {
 
                 startY = (int)(screenHeight * 0.3);
-                endY = (int)(screenHeight * 0.7);
             }
 
             driver.executeScript("mobile: scrollGesture", java.util.Map.of(
@@ -342,7 +319,7 @@ public class WikipediaMobileTest extends MobileBaseTest {
 
 
             String currentPackage = driver.getCurrentPackage();
-            if (!currentPackage.equals("org.wikipedia")) {
+            if (currentPackage != null && !currentPackage.equals("org.wikipedia")) {
 
                 driver.activateApp("org.wikipedia");
                 waitForSeconds(3);
@@ -364,7 +341,7 @@ public class WikipediaMobileTest extends MobileBaseTest {
             long startTime = System.currentTimeMillis();
             boolean found = false;
 
-            while (System.currentTimeMillis() - startTime < 5000 && !found) {
+            while (System.currentTimeMillis() - startTime < 5000) {
                 try {
                     WebElement skipButton = driver.findElement(
                             AppiumBy.xpath("//*[contains(@text, 'Skip') or contains(@text, 'SKIP') or contains(@text, 'Пропустить')]"));
@@ -378,7 +355,7 @@ public class WikipediaMobileTest extends MobileBaseTest {
                     }
                 } catch (Exception e) {
 
-                    waitForSeconds((int) 0.5);
+                    waitForSeconds(0);
                 }
             }
 

@@ -1,8 +1,6 @@
-// src/test/java/utils/DriverManager.java
 package utils;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
-import io.github.bonigarcia.wdm.config.DriverManagerType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -17,7 +15,7 @@ import java.util.Map;
 
 public class DriverManager {
     private static WebDriver driver;
-    private static ConfigReader config = new ConfigReader();
+    private static final ConfigReader config = new ConfigReader();
 
     public static WebDriver getWebDriver() {
         if (driver == null) {
@@ -37,7 +35,6 @@ public class DriverManager {
                     throw new IllegalArgumentException("Неподдерживаемый браузер: " + browser);
             }
 
-            // Общие настройки драйвера
             setupDriverCommonSettings(driver);
         }
         return driver;
@@ -52,10 +49,8 @@ public class DriverManager {
         options.addArguments("--disable-popup-blocking");
         options.addArguments("--remote-allow-origins=*");
 
-        // Отключаем сообщения "Chrome is being controlled"
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
-        // Отключаем сохранение паролей
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("credentials_enable_service", false);
         prefs.put("profile.password_manager_enabled", false);
@@ -84,12 +79,10 @@ public class DriverManager {
     }
 
     private static void setupDriverCommonSettings(WebDriver driver) {
-        // Устанавливаем таймауты
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(config.getWebTimeout()));
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
         driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(30));
 
-        // Максимизируем окно (дополнительно)
         driver.manage().window().maximize();
     }
 
@@ -103,9 +96,5 @@ public class DriverManager {
                 System.err.println("❌ Ошибка при закрытии драйвера: " + e.getMessage());
             }
         }
-    }
-
-    public static WebDriver getCurrentDriver() {
-        return driver;
     }
 }

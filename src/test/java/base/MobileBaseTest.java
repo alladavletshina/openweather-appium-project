@@ -44,7 +44,6 @@ public class MobileBaseTest {
         System.out.println("🔗 Подключение к Appium...");
         driver = new AndroidDriver(new URL(config.getMobileServerUrl()), options);
 
-        // Устанавливаем неявные ожидания
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         System.out.println("✅ Драйвер инициализирован");
@@ -64,7 +63,6 @@ public class MobileBaseTest {
         }
     }
 
-    // Вспомогательный метод для ожидания
     protected void waitForSeconds(double seconds) {
         try {
             Thread.sleep((long) (seconds * 1000L));
