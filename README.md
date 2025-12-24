@@ -77,6 +77,8 @@ cd openweather-appium-project
 
     mvn test -Dtest=WikipediaMobileTest
 
+<img width="1888" height="562" alt="image" src="https://github.com/user-attachments/assets/2e80f6b4-2bf8-42b2-b638-6cba1917dfc5" />
+
 ### Запуск через TestNG XML
 
     mvn test -DsuiteXmlFile=src/test/resources/testng-web.xml
