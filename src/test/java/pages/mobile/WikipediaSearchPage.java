@@ -12,17 +12,13 @@ import java.time.Duration;
 import java.util.List;
 
 public class WikipediaSearchPage {
-    private AppiumDriver driver;
-    private WebDriverWait wait;
+    private final WebDriverWait wait;
 
     @AndroidFindBy(id = "org.wikipedia:id/search_src_text")
     private WebElement searchInput;
 
     @AndroidFindBy(id = "org.wikipedia:id/page_list_item_title")
     private List<WebElement> searchResults;
-
-    @AndroidFindBy(id = "org.wikipedia:id/search_empty_message")
-    private WebElement emptySearchMessage;
 
     @AndroidFindBy(id = "org.wikipedia:id/search_results_list")
     private WebElement searchResultsList;
@@ -31,7 +27,6 @@ public class WikipediaSearchPage {
     private WebElement closeButton;
 
     public WikipediaSearchPage(AppiumDriver driver) {
-        this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
@@ -42,19 +37,9 @@ public class WikipediaSearchPage {
         searchInput.sendKeys(query);
     }
 
-    public void clearSearch() {
-        searchInput.clear();
-    }
-
     public void selectFirstResult() {
         if (!searchResults.isEmpty()) {
             searchResults.get(0).click();
-        }
-    }
-
-    public void selectResultByIndex(int index) {
-        if (index < searchResults.size()) {
-            searchResults.get(index).click();
         }
     }
 
@@ -70,14 +55,6 @@ public class WikipediaSearchPage {
         }
     }
 
-    public boolean isEmptySearchMessageDisplayed() {
-        try {
-            return emptySearchMessage.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     public String getFirstResultTitle() {
         if (!searchResults.isEmpty()) {
             return searchResults.get(0).getText();
@@ -85,19 +62,11 @@ public class WikipediaSearchPage {
         return "";
     }
 
-    public List<WebElement> getAllSearchResults() {
-        return searchResults;
-    }
-
-    public void waitForResults() {
-        wait.until(ExpectedConditions.visibilityOf(searchResultsList));
-    }
-
     public void closeSearch() {
         try {
             closeButton.click();
         } catch (Exception e) {
-            // Если кнопка закрытия не найдена
+            throw new RuntimeException(e);
         }
     }
 }
