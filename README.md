@@ -68,6 +68,9 @@ cd openweather-appium-project
 ### Запуск всех тестов
     mvn clean test
 
+<img width="642" height="560" alt="image" src="https://github.com/user-attachments/assets/69db72d6-0b20-48d4-a228-90fee66ddda7" />
+
+
 ### Запуск только веб-тестов
     mvn test -Dtest=OpenWeatherWebTests
 
