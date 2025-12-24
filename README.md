@@ -70,6 +70,9 @@ cd openweather-appium-project
 ### Запуск только веб-тестов
     mvn test -Dtest=OpenWeatherWebTests
 
+<img width="250" height="492" alt="image" src="https://github.com/user-attachments/assets/24a0b312-5c4d-4591-9b00-25d6d3578314" />
+
+
 ### Запуск только мобильных тестов
 
     mvn test -Dtest=WikipediaMobileTest
