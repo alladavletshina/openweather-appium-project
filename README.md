@@ -84,6 +84,9 @@ cd openweather-appium-project
 
     mvn test -DsuiteXmlFile=src/test/resources/testng-web.xml
 
+<img width="642" height="560" alt="image" src="https://github.com/user-attachments/assets/73cf96a4-d815-4245-97df-cbe4bcc75712" />
+
+
 ## Тестовые сценарии
 
 ### Веб-тесты для OpenWeatherMap (6 тестов)
