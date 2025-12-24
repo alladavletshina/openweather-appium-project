@@ -68,14 +68,10 @@ cd openweather-appium-project
     mvn clean test
 
 ### Запуск только веб-тестов
-    mvn test -Dsuite=testng-web.xml
-                или
     mvn test -Dtest=OpenWeatherWebTests
 
 ### Запуск только мобильных тестов
 
-    mvn test -Dsuite=testng-mobile.xml
-                или
     mvn test -Dtest=WikipediaMobileTest
 
 ### Запуск через TestNG XML
